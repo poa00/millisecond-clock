@@ -612,7 +612,7 @@ BOOL CPmbClockDlg::OnEraseBkgnd(CDC* pDC)
 	pDC->FillSolidRect(cr, m_bkColor);
 	m_yday = -1;
 
-	return true; CDialogEx::OnEraseBkgnd(pDC);
+	return true;// CDialogEx::OnEraseBkgnd(pDC);
 }
 
 
