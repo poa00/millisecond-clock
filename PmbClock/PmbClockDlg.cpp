@@ -70,7 +70,7 @@ void CPmbClockDlg::DoDataExchange(CDataExchange* pDX)
 
 void CPmbClockDlg::adjust_layout(int cx, int cy, bool bFirstset)
 {
-	const int dx = m_format == tpfrmtMillisecond ? 11 : m_format == tpfrmtSecond ? 8 : 5;
+	const int dx = m_format == tpfrmtMillisecond ? 10 : m_format == tpfrmtSecond ? 8 : 5;
 
 	CRect cr;
 	if (cx / dx < cy / 2)
@@ -171,7 +171,7 @@ void CPmbClockDlg::update_taskbar_icon(CDC* pDC, const tm& now)
 
 	memDC.SelectObject(&penHour);
 	memDC.MoveTo(16, 16);
-	memDC.LineTo(16 + 9 * sin(now.tm_hour * 360 / 24 * 3.14159 / 180), 16 - 9 * cos(now.tm_hour * 360 / 24 * 3.141592 / 180));
+	memDC.LineTo(16 + 9 * sin(now.tm_hour * 360 / 12 * 3.14159 / 180), 16 - 9 * cos(now.tm_hour * 360 / 12 * 3.141592 / 180));
 
 	memDC.SelectObject(&penMin);
 	memDC.MoveTo(16, 16);
