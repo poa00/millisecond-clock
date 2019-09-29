@@ -9,6 +9,8 @@
 
 #define WM_TASKBAR	(WM_USER + 1)
 
+#define PMB_WINDOW_MINIM_SIZEX	60
+#define PMB_WINDOW_MINIM_SIZEY	30
 
 
 // CPmbClockDlg dialog

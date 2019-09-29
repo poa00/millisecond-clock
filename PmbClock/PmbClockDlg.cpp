@@ -273,8 +273,6 @@ BOOL CPmbClockDlg::OnInitDialog()
 		}
 	}
 
-	// Set the icon for this dialog.  The framework does this automatically
-	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
@@ -297,6 +295,34 @@ BOOL CPmbClockDlg::OnInitDialog()
 		if (size == sizeof(CRect))
 		{
 			CRect wr = *(CRect*)pbyte;
+			if (wr.Width() < PMB_WINDOW_MINIM_SIZEX)
+				wr.right = wr.left + PMB_WINDOW_MINIM_SIZEX;
+			if (wr.Height() < PMB_WINDOW_MINIM_SIZEY)
+				wr.bottom = wr.top + PMB_WINDOW_MINIM_SIZEY;
+			if (wr.bottom <= PMB_WINDOW_MINIM_SIZEY / 2)
+			{
+				int h = wr.Height();
+				wr.bottom = PMB_WINDOW_MINIM_SIZEY / 2;
+				wr.top = wr.bottom - h;
+			}
+			if (GetSystemMetrics(SM_CXSCREEN) - PMB_WINDOW_MINIM_SIZEX / 2 <= wr.left)
+			{
+				int w = wr.Width();
+				wr.left = GetSystemMetrics(SM_CXSCREEN) - PMB_WINDOW_MINIM_SIZEX / 2;
+				wr.right = wr.left + w;
+			}
+			if (GetSystemMetrics(SM_CYSCREEN) - PMB_WINDOW_MINIM_SIZEY / 2 <= wr.top)
+			{
+				int h = wr.Height();
+				wr.top = GetSystemMetrics(SM_CYSCREEN) - PMB_WINDOW_MINIM_SIZEY / 2;
+				wr.bottom = wr.top + h;
+			}
+			if (wr.right <= PMB_WINDOW_MINIM_SIZEX / 2)
+			{
+				int w = wr.Width();
+				wr.right = PMB_WINDOW_MINIM_SIZEX / 2;
+				wr.left = wr.right - w;
+			}
 			SetWindowPos(nullptr, wr.left, wr.top, wr.Width(), wr.Height(), SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOREDRAW);
 		}
 		free(pbyte);
@@ -609,31 +635,47 @@ void CPmbClockDlg::OnMouseMove(UINT nFlags, CPoint point)
 		{
 			CRect cr;
 			GetClientRect(cr);
+			bool bError = false;
 			if (cr.Width() - 15 < m_point.x && m_point.x < cr.Width() + 15 && cr.Height() - 15 < m_point.y && m_point.y < cr.Height() + 15)
 			{
-				SetWindowPos(&CWnd::wndTopMost, 0, 0, cr.Width() + point.x - m_point.x, cr.Height() + point.y - m_point.y, SWP_NOMOVE);
-				m_point = CPoint(cr.Width() + point.x - m_point.x, cr.Height() + point.y - m_point.y);
-				m_yday = -1;
+				if (!(bError = cr.Width() + point.x - m_point.x < PMB_WINDOW_MINIM_SIZEX || cr.Height() + point.y - m_point.y < PMB_WINDOW_MINIM_SIZEY))
+				{
+					SetWindowPos(&CWnd::wndTopMost, 0, 0, cr.Width() + point.x - m_point.x, cr.Height() + point.y - m_point.y, SWP_NOMOVE);
+					m_point = CPoint(cr.Width() + point.x - m_point.x, cr.Height() + point.y - m_point.y);
+					m_yday = -1;
+				}
 			}
 			else if (cr.Height() - 10 < m_point.y && m_point.y < cr.Height() + 10)
 			{
-				SetWindowPos(&CWnd::wndTopMost, 0, 0, cr.Width() + point.x - m_point.x, cr.Height(), SWP_NOMOVE);
-				m_point.x = cr.Width() + point.x - m_point.x;
-				m_yday = -1;
+				if (!(bError = cr.Height() + point.y - m_point.y < PMB_WINDOW_MINIM_SIZEY))
+				{
+					SetWindowPos(&CWnd::wndTopMost, 0, 0, cr.Width(), cr.Height() + point.y - m_point.y, SWP_NOMOVE);
+					m_point.y = cr.Height() + point.y - m_point.y;
+					m_yday = -1;
+				}
 			}
 			else if (cr.Width() - 10 < m_point.x && m_point.x < cr.Width() + 10)
 			{
-				SetWindowPos(&CWnd::wndTopMost, 0, 0, cr.Width(), cr.Height() + point.y - m_point.y, SWP_NOMOVE);
-				m_point.y = cr.Height() + point.y - m_point.y;
-				m_yday = -1;
+				if (!(bError = cr.Width() + point.x - m_point.x < PMB_WINDOW_MINIM_SIZEX))
+				{
+					SetWindowPos(&CWnd::wndTopMost, 0, 0, cr.Width() + point.x - m_point.x, cr.Height(), SWP_NOMOVE);
+					m_point.x = cr.Width() + point.x - m_point.x;
+					m_yday = -1;
+				}
 			}
 			else
 			{
 				ClientToScreen(&point);
-				SetWindowPos(&CWnd::wndTopMost, point.x - m_point.x, point.y - m_point.y, 0, 0, SWP_NOREDRAW | SWP_NOSIZE);
+				if (!(bError = GetSystemMetrics(SM_CXSCREEN) - PMB_WINDOW_MINIM_SIZEX / 2 < point.x - m_point.x || GetSystemMetrics(SM_CYSCREEN) - PMB_WINDOW_MINIM_SIZEY / 2 < point.y - m_point.y
+						|| point.x - m_point.x + cr.Width() < PMB_WINDOW_MINIM_SIZEX / 2 || point.y - m_point.y + cr.Height() < PMB_WINDOW_MINIM_SIZEY / 2))
+					SetWindowPos(&CWnd::wndTopMost, point.x - m_point.x, point.y - m_point.y, 0, 0, SWP_NOREDRAW | SWP_NOSIZE);
 			}
-			GetWindowRect(cr);
-			theApp.WriteProfileBinary(_T(PROFILE_REGISTRY), L"wr", (LPBYTE)&cr, sizeof(cr));
+
+			if (!bError)
+			{
+				GetWindowRect(cr);
+				theApp.WriteProfileBinary(_T(PROFILE_REGISTRY), L"wr", (LPBYTE)& cr, sizeof(cr));
+			}
 			return;
 		}
 	}
