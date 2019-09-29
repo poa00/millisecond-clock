@@ -567,12 +567,14 @@ void CPmbClockDlg::OnTimer(UINT_PTR nIDEvent)
 			GetClientRect(cr);
 
 			m_yday = now.tm_yday;
-			
-			const WCHAR* days[] = { L"domingo", L"lunes", L"martes", L"miércoles", L"jueves", L"viernes", L"sábado" };
-			const WCHAR* months[] = { L"enero", L"febrero", L"marzo", L"abril", L"mayo", L"junio", L"julio", L"agosto", L"septiembre", L"octubre", L"noviembre", L"diciembre" };
-
-			CString date;
-			date.Format(L"%s %d de %s del %d", days[now.tm_wday], now.tm_mday, months[now.tm_mon], 1900 + now.tm_year);
+		
+			CTime t = CTime::GetCurrentTime();
+			SYSTEMTIME sysTime;
+			t.GetAsSystemTime(sysTime);
+			WCHAR tstr[_MAX_PATH], sdtfrmt[_MAX_PATH];
+			GetLocaleInfo(LOCALE_NAME_USER_DEFAULT, LOCALE_SLONGDATE, sdtfrmt, _MAX_PATH);
+			GetDateFormatEx(LOCALE_NAME_USER_DEFAULT, NULL, &sysTime, sdtfrmt, tstr, _MAX_PATH, nullptr);
+			CString date = tstr;
 
 			if (!m_dfont.m_hObject)
 				m_dfont.CreatePointFont(180, L"Monotype Corsiva", pDC);
@@ -581,7 +583,8 @@ void CPmbClockDlg::OnTimer(UINT_PTR nIDEvent)
 			pDC->DrawText(date, dr, DT_CALCRECT | DT_SINGLELINE);
 			if (m_s[1].bottom + dr.Height() <= cr.Height())
 			{
-				cr.top = cr.bottom - dr.Height();
+				cr.top = m_s[0].bottom + (cr.bottom - m_s[0].bottom) / 2 - dr.Height() / 2;
+				cr.bottom = cr.top + dr.Height();
 				cr.left = (cr.Width() - dr.Width()) / 2;
 				cr.right = cr.left + dr.Width();
 				COLORREF bkColor = pDC->SetBkColor(m_bkColor),
@@ -602,6 +605,7 @@ void CPmbClockDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
 	adjust_layout(cx, cy, false);
+	RedrawWindow();
 }
 
 
@@ -668,7 +672,7 @@ void CPmbClockDlg::OnMouseMove(UINT nFlags, CPoint point)
 				ClientToScreen(&point);
 				if (!(bError = GetSystemMetrics(SM_CXSCREEN) - PMB_WINDOW_MINIM_SIZEX / 2 < point.x - m_point.x || GetSystemMetrics(SM_CYSCREEN) - PMB_WINDOW_MINIM_SIZEY / 2 < point.y - m_point.y
 						|| point.x - m_point.x + cr.Width() < PMB_WINDOW_MINIM_SIZEX / 2 || point.y - m_point.y + cr.Height() < PMB_WINDOW_MINIM_SIZEY / 2))
-					SetWindowPos(&CWnd::wndTopMost, point.x - m_point.x, point.y - m_point.y, 0, 0, SWP_NOREDRAW | SWP_NOSIZE);
+					SetWindowPos(&CWnd::wndTopMost, point.x - m_point.x, point.y - m_point.y, 0, 0, SWP_NOSIZE);
 			}
 
 			if (!bError)
