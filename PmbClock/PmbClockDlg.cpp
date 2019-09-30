@@ -134,7 +134,7 @@ void CPmbClockDlg::update_taskbar_icon(CDC* pDC, const tm& now)
 		m_sec = now.tm_min;
 
 	CDC memDC;
-	memDC.CreateCompatibleDC(pDC);
+	memDC.CreateCompatibleDC(nullptr);
 
 	ICONINFO info;
 	GetIconInfo(m_hIcon, &info);
@@ -208,7 +208,7 @@ void CPmbClockDlg::update_taskbar_icon(CDC* pDC, const tm& now)
 	memDC.SelectObject(oldBmp);
 	brush.DeleteObject();
 	memBmp.DeleteObject();
-	memDC.DeleteDC();
+	//memDC.DeleteDC();
 
 	DestroyIcon(m_hIcon);
 	m_hIcon = CreateIcon(AfxGetInstanceHandle(),    // application instance  
