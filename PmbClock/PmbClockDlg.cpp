@@ -136,15 +136,17 @@ void CPmbClockDlg::update_taskbar_icon(CDC* pDC, const tm& now)
 	CDC memDC;
 	memDC.CreateCompatibleDC(nullptr);
 
-	ICONINFO info;
-	GetIconInfo(m_hIcon, &info);
-	BITMAP bmp;
-	GetObject(info.hbmColor, sizeof(bmp), &bmp);
+	if (!m_hIconClock)
+	{
+		ICONINFO info;
+		GetIconInfo(m_hIcon, &info);
+		BITMAP bmp;
+		GetObject(info.hbmColor, sizeof(bmp), &bmp);
 
-	HBITMAP hBitmap = (HBITMAP)CopyImage(info.hbmColor, IMAGE_BITMAP, 0, 0, 0);
-	memDC.GetSafeHdc();
-	HBITMAP hOldBmp = (HBITMAP)memDC.SelectObject(hBitmap);
-
+		m_hBitmap = (HBITMAP)CopyImage(info.hbmColor, IMAGE_BITMAP, 0, 0, 0);
+	}
+	HBITMAP hOldBmp = (HBITMAP)memDC.SelectObject(m_hBitmap);
+	
 	memDC.FillSolidRect(0, 0, 32, 32, RGB(0x00, 0x00, 0x00));
 
 	CBrush brush;
@@ -186,10 +188,9 @@ void CPmbClockDlg::update_taskbar_icon(CDC* pDC, const tm& now)
 
 	BYTE XORmaskIcon[32 * 32 / 8 * 1 * 32];
 	BYTE ANDmaskIcon[32 * 32 / 8 * 1];
-	LONG count = GetBitmapBits(hBitmap, 32 * 32 / 8 * 1 * 32, XORmaskIcon);
+	LONG count = GetBitmapBits(m_hBitmap, 32 * 32 / 8 * 1 * 32, XORmaskIcon);
 
 	memDC.SelectObject(hOldBmp);
-	DeleteObject(hBitmap);
 	memDC.SelectObject(oldPen);
 
 	CBitmap memBmp;
@@ -201,26 +202,20 @@ void CPmbClockDlg::update_taskbar_icon(CDC* pDC, const tm& now)
 	brushInv.CreateSolidBrush(RGB(0x00, 0x00, 0x00));
 	memDC.SelectObject(&brushInv);
 	memDC.Ellipse(0, 0, 32, 32);
-	memBmp.GetBitmap(&bmp);
 	DWORD count2 = memBmp.GetBitmapBits(128, ANDmaskIcon);
 
 	memDC.SelectObject(oldBrush);
 	memDC.SelectObject(oldBmp);
 	brush.DeleteObject();
 	memBmp.DeleteObject();
-	//memDC.DeleteDC();
+	memDC.DeleteDC();
 
-	DestroyIcon(m_hIcon);
-	m_hIcon = CreateIcon(AfxGetInstanceHandle(),    // application instance  
-		32,              // icon width 
-		32,              // icon height 
-		1,               // number of XOR planes 
-		32,               // number of bits per pixel 
-		ANDmaskIcon,     // AND bitmask  
-		XORmaskIcon);    // XOR bitmask 
+	if (m_hIconClock)
+		DestroyIcon(m_hIconClock);
 
-	SetIcon(m_hIcon, FALSE);
-	SetIcon(m_hIcon, TRUE);
+	m_hIconClock = CreateIcon(AfxGetInstanceHandle(), 32, 32, 1, 32, ANDmaskIcon, XORmaskIcon);
+	SetIcon(m_hIconClock, FALSE);
+	SetIcon(m_hIconClock, TRUE);
 }
 
 
@@ -253,6 +248,7 @@ BOOL CPmbClockDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
+	m_hIconClock = nullptr;
 	// Add "About..." menu item to system menu.
 
 	// IDM_ABOUTBOX must be in the system command range.
@@ -477,14 +473,22 @@ void CPmbClockDlg::draw_separator(CDC* pDC, int s, int pw, COLORREF color) const
 	if (pw < 2)
 		pDC->SetPixel(x, y, color);
 	else
+	{
+		CGdiObject* oldObj = pDC->SelectStockObject(NULL_PEN);
 		pDC->Ellipse(x - pw, y - pw, x + pw, y + pw);
+		pDC->SelectObject(oldObj);
+	}
 
 	y = m_s[j].bottom - m_s[j].Height() / 3;
 	x = m_s[j].calc_x(y) - m_s[j].left + m_s[j].right + dx;
 	if (pw < 2)
 		pDC->SetPixel(x, y, color);
 	else
+	{
+		CGdiObject* oldObj = pDC->SelectStockObject(NULL_PEN);
 		pDC->Ellipse(x - pw, y - pw, x + pw, y + pw);
+		pDC->SelectObject(oldObj);
+	}
 }
 
 
@@ -878,6 +882,7 @@ void CPmbClockDlg::OnConfigMinutes()
 void CPmbClockDlg::OnConfigBackcolor()
 {
 	CMFCColorDialog dlg;
+	dlg.SetCurrentColor(m_bkColor);
 	if (dlg.DoModal() == IDOK)
 	{
 		m_bkColor = dlg.GetColor();
@@ -894,6 +899,7 @@ void CPmbClockDlg::OnConfigBackcolor()
 void CPmbClockDlg::OnConfigColor()
 {
 	CMFCColorDialog dlg;
+	dlg.SetCurrentColor(m_color);
 	if (dlg.DoModal() == IDOK)
 	{
 		m_color = dlg.GetColor();
@@ -919,7 +925,9 @@ void CPmbClockDlg::OnConfigDate()
 
 void CPmbClockDlg::OnConfigDatefont()
 {
-	CFontDialog dlg;
+	LOGFONT lf;
+	m_dfont.GetLogFont(&lf);
+	CFontDialog dlg(&lf);
 	if (dlg.DoModal() == IDOK)
 	{
 		if (m_dfont.m_hObject)

@@ -51,8 +51,11 @@ protected:
 	tpFormat m_format;
 	COLORREF m_bkColor;
 	COLORREF m_color;
-	HICON m_hIcon;
 	seven_segment m_s[9];
+
+	HICON m_hIcon;
+	HICON m_hIconClock;
+	HBITMAP m_hBitmap;
 
 	bool m_bdate;
 	CFont m_dfont;
