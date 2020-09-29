@@ -597,14 +597,13 @@ void CPmbClockDlg::OnTimer(UINT_PTR nIDEvent)
 			if (!m_dfont.m_hObject)
 				m_dfont.CreatePointFont(180, L"Monotype Corsiva", pDC);
 			CFont* oldFont = pDC->SelectObject(&m_dfont);
-			CRect dr(cr);
-			pDC->DrawText(date, dr, DT_CALCRECT | DT_SINGLELINE);
-			if (m_s[1].bottom + dr.Height() <= cr.Height())
+			CSize dr = pDC->GetTextExtent(date);
+			if (m_s[1].bottom + dr.cy <= cr.Height())
 			{
-				cr.top = m_s[0].bottom + (cr.bottom - m_s[0].bottom) / 2 - dr.Height() / 2;
-				cr.bottom = cr.top + dr.Height();
-				cr.left = (cr.Width() - dr.Width()) / 2;
-				cr.right = cr.left + dr.Width();
+				cr.top = m_s[0].bottom + (cr.bottom - m_s[0].bottom) / 2 - dr.cy / 2;
+				cr.bottom = cr.top + dr.cy;
+				cr.left = (cr.Width() - dr.cx) / 2;
+				cr.right = cr.left + dr.cx;
 				COLORREF bkColor = pDC->SetBkColor(m_bkColor),
 					color = pDC->SetTextColor(m_dColor);
 				pDC->DrawText(date, cr, DT_SINGLELINE | DT_LEFT);
