@@ -235,6 +235,7 @@ BEGIN_MESSAGE_MAP(CPmbClockDlg, CDialogEx)
 	ON_COMMAND(ID_CONFIG_MILLISECONDS, &CPmbClockDlg::OnConfigMilliseconds)
 	ON_COMMAND(ID_CONFIG_SECONDS, &CPmbClockDlg::OnConfigSeconds)
 	ON_COMMAND(ID_CONFIG_MINUTES, &CPmbClockDlg::OnConfigMinutes)
+	ON_COMMAND(ID_CONFIG_TRANSPARENT, &CPmbClockDlg::OnConfigTransparent)
 	ON_COMMAND(ID_CONFIG_BACKCOLOR, &CPmbClockDlg::OnConfigBackcolor)
 	ON_COMMAND(ID_CONFIG_COLOR, &CPmbClockDlg::OnConfigColor)
 	ON_COMMAND(ID_CONFIG_DATE, &CPmbClockDlg::OnConfigDate)
@@ -345,6 +346,19 @@ BOOL CPmbClockDlg::OnInitDialog()
 		free(pbyte);
 	}
 
+
+	if (bOk = theApp.GetProfileBinary(_T(PROFILE_REGISTRY), L"transparent", &pbyte, &size))
+	{
+		if (m_transparent = (size == sizeof(bool) && *pbyte))
+		{
+			LONG ExtendedStyle = GetWindowLong(GetSafeHwnd(), GWL_EXSTYLE);
+			SetWindowLong(GetSafeHwnd(), GWL_EXSTYLE, ExtendedStyle | WS_EX_LAYERED);
+			::SetLayeredWindowAttributes(GetSafeHwnd(), m_bkColor, 200, LWA_COLORKEY);
+		}
+		free(pbyte);
+	}
+	else
+		m_transparent = false;
 
 	if (!(bOk = theApp.GetProfileBinary(_T(PROFILE_REGISTRY), L"bdate", &pbyte, &size)))
 		m_bdate = true;
@@ -819,6 +833,8 @@ void CPmbClockDlg::OnRButtonDown(UINT nFlags, CPoint point)
 			pSubMenu->CheckMenuItem(ID_CONFIG_MINUTES, MF_CHECKED | MF_BYCOMMAND);
 		if (m_bdate)
 			pSubMenu->CheckMenuItem(ID_CONFIG_DATE, MF_CHECKED | MF_BYCOMMAND);
+		if (m_transparent)
+			pSubMenu->CheckMenuItem(ID_CONFIG_TRANSPARENT, MF_CHECKED | MF_BYCOMMAND);
 		ClientToScreen(&point);
 		pSubMenu->TrackPopupMenu(TPM_LEFTALIGN, point.x, point.y, this);
 	}
@@ -875,6 +891,25 @@ void CPmbClockDlg::OnConfigMinutes()
 		RedrawWindow();
 		theApp.WriteProfileBinary(_T(PROFILE_REGISTRY), L"format", (LPBYTE)&m_format, sizeof(m_format));
 	}
+}
+
+
+
+void CPmbClockDlg::OnConfigTransparent()
+{
+	m_transparent = !m_transparent;
+	if (m_transparent)
+	{
+		LONG ExtendedStyle = GetWindowLong(GetSafeHwnd(), GWL_EXSTYLE);
+		SetWindowLong(GetSafeHwnd(), GWL_EXSTYLE, ExtendedStyle | WS_EX_LAYERED);
+		::SetLayeredWindowAttributes(GetSafeHwnd(), m_bkColor, 200, LWA_COLORKEY);
+	}
+	else
+	{
+		LONG ExtendedStyle = GetWindowLong(GetSafeHwnd(), GWL_EXSTYLE);
+		SetWindowLong(GetSafeHwnd(), GWL_EXSTYLE, ExtendedStyle & ~WS_EX_LAYERED);
+	}
+	theApp.WriteProfileBinary(_T(PROFILE_REGISTRY), L"transparent", (LPBYTE)&m_transparent, sizeof(m_transparent));
 }
 
 

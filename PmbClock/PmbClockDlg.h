@@ -57,6 +57,7 @@ protected:
 	HICON m_hIconClock;
 	HBITMAP m_hBitmap;
 
+	bool m_transparent;
 	bool m_bdate;
 	CFont m_dfont;
 	COLORREF m_dColor;
@@ -87,6 +88,7 @@ protected:
 	afx_msg void OnConfigMilliseconds();
 	afx_msg void OnConfigSeconds();
 	afx_msg void OnConfigMinutes();
+	afx_msg void OnConfigTransparent();
 	afx_msg void OnConfigBackcolor();
 	afx_msg void OnConfigColor();
 	afx_msg void OnConfigDate();
